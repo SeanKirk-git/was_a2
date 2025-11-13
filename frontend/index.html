@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment 2</title>
+    <meta name="author" content="Group 2">
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Simple style for active/inactive tabs */
+        .tab-active {
+            @apply border-indigo-500 text-indigo-600;
+        }
+        .tab-inactive {
+            @apply border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700;
+        }
+        /* Hide elements by default */
+        .hidden-section {
+            display: none;
+        }
+    </style>
+</head>
+<body class="h-full font-sans">
+    <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+        
+        <!-- Main Authentication Card (Login/Register) -->
+        <div id="auth-container">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md">
+                <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+                    Assignment 2 - Group 2
+                </h2>
+                <p id="auth-header" class="mt-2 text-center text-sm text-gray-600">
+                    Sign in to your account
+                </p>
+            </div>
+
+            <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                <div class="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
+
+                    <!-- Tab Navigation -->
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button id="tab-login" type="button" class="tab-active w-1/2 border-b-2 px-1 py-4 text-center text-sm font-medium" onclick="showView('login')">
+                                Login
+                            </button>
+                            <button id="tab-register" type="button" class="tab-inactive w-1/2 border-b-2 px-1 py-4 text-center text-sm font-medium" onclick="showView('register')">
+                                Register
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- General Error Message Area -->
+                    <div id="error-message" class="hidden-section mt-4 rounded-md bg-red-50 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <!-- Heroicon: x-circle -->
+                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 id="error-text" class="text-sm font-medium text-red-800">There was a problem</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="login-form" class="space-y-6 pt-6" action="#" method="POST" onsubmit="handleLogin(event)">
+                        <div>
+                            <label for="login-username" class="block text-sm font-medium leading-6 text-gray-900">Username or Email</label>
+                            <div class="mt-2">
+                                <input id="login-username" name="username" type="text" autocomplete="username" required class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="login-password" class="block text-sm font-medium leading-6 text-gray-900">Password</label>
+                            <div class="mt-2">
+                                <input id="login-password" name="password" type="password" autocomplete="current-password" required class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                Sign in
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Registration Form -->
+                    <form id="register-form" class="hidden-section space-y-6 pt-6" action="#" method="POST" onsubmit="handleRegister(event)">
+                        <div>
+                            <label for="register-username" class="block text-sm font-medium leading-6 text-gray-900">Username</label>
+                            <div class="mt-2">
+                                <input id="register-username" name="username" type="text" required
+                                    pattern="[a-zA-Z0-9]{9,}" 
+                                    title="Username must be at least 9 characters long and contain only letters and numbers."
+                                    class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">At least 9 characters, letters and numbers only.</p>
+                        </div>
+
+                        <div>
+                            <label for="register-email" class="block text-sm font-medium leading-6 text-gray-900">Email address</label>
+                            <div class="mt-2">
+                                <input id="register-email" name="email" type="email" autocomplete="email" required
+                                    class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="register-password" class="block text-sm font-medium leading-6 text-gray-900">Password</label>
+                            <div class="mt-2">
+                                <input id="register-password" name="password" type="password" required
+                                    pattern="(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{9,}"
+                                    title="Password must be at least 9 characters long and contain at least one letter and one number."
+                                    class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">At least 9 characters, with letters and numbers.</p>
+                        </div>
+
+                        <div>
+                            <label for="register-confirm-password" class="block text-sm font-medium leading-6 text-gray-900">Confirm Password</label>
+                            <div class="mt-2">
+                                <input id="register-confirm-password" name="confirmPassword" type="password" required
+                                    class="block w-full rounded-md border-0 p-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                            </div>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                                Create account
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Page -->
+        <div id="welcome-container" class="hidden-section text-center">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md">
+                <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+                    Welcome!
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    You are successfully logged in as <strong id="welcome-username">user</strong>.
+                </p>
+                <div class="mt-8">
+                    <button type="button" onclick="handleLogout()" class="flex w-full justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600">
+                        Log out
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // IMPORTANT: After deploying your backend to Render, update this URL
+        // to match your Render Web Service URL. (e.g., "https://my-auth-backend.onrender.com")
+        const API_BASE_URL = 'http://localhost:3000'; 
+        // --- END CONFIGURATION ---
+
+        // Get references to all the DOM elements we'll need
+        const authContainer = document.getElementById('auth-container');
+        const welcomeContainer = document.getElementById('welcome-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const authHeader = document.getElementById('auth-header');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const welcomeUsername = document.getElementById('welcome-username');
+        const registerPassword = document.getElementById('register-password');
+        const registerConfirmPassword = document.getElementById('register-confirm-password');
+
+        // --- CORE FUNCTIONS ---
+
+        /**
+         * Sends data to the backend API.
+         * @param {string} endpoint - The API endpoint (e.g., '/login').
+         * @param {object} body - The data to send in the request body.
+         * @returns {Promise<object>} - The JSON response from the server.
+         */
+        async function apiRequest(endpoint, body) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body),
+                    // 'withCredentials' is necessary to send/receive session cookies
+                    credentials: 'include', 
+                });
+
+                // Get the JSON response. The server should always send JSON,
+                // even for errors.
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // If response is not ok, throw an error with the message
+                    // from the server.
+                    throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API request failed:', error);
+                // Re-throw the error so the calling function can handle it
+                throw error;
+            }
+        }
+
+        /**
+         * Handles the login form submission.
+         */
+        async function handleLogin(event) {
+            event.preventDefault();
+            hideError();
+            
+            const formData = new FormData(loginForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const result = await apiRequest('/login', data);
+                
+                if (result.success) {
+                    // --- Cross-Site Scripting (XSS) Prevention ---
+                    // We use .textContent to safely insert the username.
+                    // .textContent inserts the data as plain text, so the browser
+                    // will not interpret any HTML or scripts.
+                    // Using .innerHTML here would be a security risk.
+                    welcomeUsername.textContent = result.username;
+                    showView('welcome');
+                }
+            } catch (error) {
+                // (Requirement 7)
+                // If login fails because user not found, redirect to register
+                if (error.message.includes('not found')) {
+                    showError('Account not found. Please register.');
+                    showView('register');
+                } else {
+                    showError(error.message);
+                }
+            }
+        }
+
+        /**
+         * Handles the registration form submission.
+         */
+        async function handleRegister(event) {
+            event.preventDefault();
+            hideError();
+
+            // --- Client-Side Input Validation ---
+            // This checks if the two password fields match.
+            // This is a *client-side* check for good UX. The *server*
+            // will perform this check again for security.
+            if (registerPassword.value !== registerConfirmPassword.value) {
+                showError("Passwords do not match.");
+                return;
+            }
+            // Other validation (email format, password strength, username)
+            // is handled by the HTML5 `pattern` and `type` attributes
+            // on the input fields themselves.
+
+            const formData = new FormData(registerForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const result = await apiRequest('/register', data);
+                
+                // (Requirement 5)
+                // If registration is successful, automatically log in.
+                if (result.success) {
+                    // --- XSS Prevention (same as login) ---
+                    welcomeUsername.textContent = result.username;
+                    showView('welcome');
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        /**
+         * Handles the logout button click.
+         */
+        async function handleLogout() {
+            hideError();
+            try {
+                // Call the backend endpoint to destroy the session
+                await apiRequest('/logout', {});
+                showView('login');
+                loginForm.reset();
+                registerForm.reset();
+            } catch (error) {
+                showError('Logout failed. Please try again.');
+            }
+        }
+
+        /**
+         * Checks if the user has an active session on page load.
+         */
+        async function checkSession() {
+            try {
+                const result = await apiRequest('/check-session', {});
+                if (result.success) {
+                    // --- XSS Prevention (same as login) ---
+                    welcomeUsername.textContent = result.username;
+                    showView('welcome');
+                }
+            } catch (error) {
+                // If session check fails (no active session),
+                // just stay on the login page. No error needed.
+                console.log('No active session found.');
+            }
+        }
+
+        // --- UI HELPER FUNCTIONS ---
+
+        /**
+         * Shows the specified view ('login', 'register', 'welcome')
+         * and hides the others.
+         * @param {string} viewName - The view to show.
+         */
+        function showView(viewName) {
+            // Hide all main containers
+            authContainer.classList.add('hidden-section');
+            welcomeContainer.classList.add('hidden-section');
+
+            // Hide all forms
+            loginForm.classList.add('hidden-section');
+            registerForm.classList.add('hidden-section');
+            
+            // Reset tabs
+            tabLogin.classList.remove('tab-active');
+            tabLogin.classList.add('tab-inactive');
+            tabRegister.classList.remove('tab-active');
+            tabRegister.classList.add('tab-inactive');
+            
+            hideError();
+
+            if (viewName === 'login') {
+                authContainer.classList.remove('hidden-section');
+                loginForm.classList.remove('hidden-section');
+                tabLogin.classList.add('tab-active');
+                tabLogin.classList.remove('tab-inactive');
+                authHeader.textContent = 'Sign in to your account';
+            } else if (viewName === 'register') {
+                authContainer.classList.remove('hidden-section');
+                registerForm.classList.remove('hidden-section');
+                tabRegister.classList.add('tab-active');
+                tabRegister.classList.remove('tab-inactive');
+                authHeader.textContent = 'Create your new account';
+            } else if (viewName === 'welcome') {
+                welcomeContainer.classList.remove('hidden-section');
+            }
+        }
+
+        /**
+         * Displays an error message to the user.
+         * @param {string} message - The error message to show.
+         */
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden-section');
+        }
+
+        /**
+         * Hides the error message box.
+         */
+        function hideError() {
+            errorMessage.classList.add('hidden-section');
+            errorText.textContent = '';
+        }
+
+        // --- PAGE INITIALIZATION ---
+
+        // When the page first loads, check for an active session.
+        // This keeps the user logged in if they refresh the page.
+        document.addEventListener('DOMContentLoaded', checkSession);
+
+    </script>
+</body>
+</html>
