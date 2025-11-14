@@ -5,61 +5,54 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const cors = require('cors');
-
-// --- CONFIGURATION ---
-
 const app = express();
 const port = process.env.PORT || 3000;
-const saltRounds = 10; // For password hashing
+const saltRounds = 10; // Used for password hashing
 
-// Use the DATABASE_URL environment variable provided by Render.
-// Fallback to a local default (update this for your local machine).
-const connectionString = process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/assignment2';
+// Uses the DATABASE_URL environment variable configured in Render.
+const connectionString = process.env.DATABASE_URL;
 
-// Check if DATABASE_URL is set (like on Render) and enable SSL if so.
+// Checks if DATABASE_URL is set in Render and enables SSL.
 const sslConfig = process.env.DATABASE_URL ? { rejectUnauthorized: false } : false;
 
-// Setup PostgreSQL connection pool
+// Creates PostgreSQL connection pool
 const pool = new Pool({
     connectionString: connectionString,
     ssl: sslConfig
 });
 
-// Use a long, random string for session secret in production!
-// Store this in your Render environment variables.
-const sessionSecret = process.env.SESSION_SECRET || 'a-very-weak-local-secret-key';
+// Uses the SESSION_SECRET environment variable configured in Render to connect to the db.
+const sessionSecret = process.env.SESSION_SECRET;
 
-// --- MIDDLEWARE SETUP ---
 
-// 1. CORS (Cross-Origin Resource Sharing)
-// This is required to allow your frontend (on a different domain)
-// to make API requests to this backend.
+//Middleware configuration
+
+// CORS (Cross Origin Resource Sharing) setup
+// Needed to allow frontend which is on a different domain to make API requests
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5500', // Allow your frontend URL
-    credentials: true // Allow cookies (for sessions)
+    // Uses the FRONTEND_URL environment variable configured in Render
+    origin: process.env.FRONTEND_URL, 
+    credentials: true // Enables session cookies.
 }));
 
-// 2. Body Parser
-// This parses incoming JSON request bodies
+// Parses incoming JSON request bodies
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 3. Express Session
-// This middleware handles user sessions.
-// We use 'connect-pg-simple' to store sessions in our PostgreSQL database.
-// This is crucial for a stateless hosting environment like Render.
+// express-session used to handle user sessions.
+// Uses 'connect-pg-simple' to store session data in the PostgreSQL database.
 app.use(session({
     store: new PgSession({
-        pool: pool, // Use our existing database pool
-        tableName: 'user_sessions' // Name of the session table
+        pool: pool, // Uses the existing database pool
+        tableName: 'user_sessions' // Name of the sessions table
     }),
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production (HTTPS)
+        secure: process.env.NODE_ENV === 'production', // Uses secure cookies in production.
         httpOnly: true, // Prevents client-side JS from accessing the cookie
-        maxAge: 1000 * 60 * 60 * 24 // Cookie expires in 1 day
+        maxAge: 1000 * 60 * 60 * 24 // Cookie expiration = 1 day
     }
 }));
 
@@ -72,13 +65,14 @@ function isAuthenticated(req, res, next) {
     }
 }
 
-// --- DATABASE INITIALIZATION ---
 
-// Function to create necessary database tables if they don't exist
+// Database Creation
+
+// Function to create database tables if they don't exist yet
 async function initializeDatabase() {
     const client = await pool.connect();
     try {
-        // Create 'users' table
+        // Creates the 'users' table
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -89,8 +83,7 @@ async function initializeDatabase() {
             );
         `);
 
-        // Create 'user_sessions' table (for express-session)
-        // This schema is from the 'connect-pg-simple' documentation
+        // Creates the 'user_sessions' table for express-session
         await client.query(`
             CREATE TABLE IF NOT EXISTS "user_sessions" (
                 "sid" varchar NOT NULL COLLATE "default",
@@ -104,80 +97,71 @@ async function initializeDatabase() {
             PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
         `);
 
-        console.log('Database tables initialized successfully.');
+        console.log('Database tables successfully created.');
     } catch (err) {
-        console.error('Error initializing database:', err);
+        console.error('Error creating database:', err);
     } finally {
         client.release();
     }
 }
 
-// --- API ENDPOINTS ---
+// API Endpoints
+// Endpoint = POST /register
 
-/**
- * Endpoint: POST /register
- * Registers a new user.
- */
+//Registers user account
 app.post('/register', async (req, res) => {
     const { username, email, password, confirmPassword } = req.body;
 
-    // --- 1. Server-Side Input Validation (Requirement 10) ---
-
-    // a. Username validation
-    const usernameRegex = /^[a-zA-Z0-9]{9,}$/;
+    // Input Validation (Server Side)
+    // "Username" field validation. Only allows alphabets and numbers. Requires 8+ characters.
+    const usernameRegex = /^[a-zA-Z0-9]{8,}$/;
     if (!username || !usernameRegex.test(username)) {
-        return res.status(400).json({ success: false, message: 'Invalid username. Must be 9+ characters, letters and numbers only.' });
+        return res.status(400).json({ success: false, message: 'Invalid username. Must be 8+ characters. Use only alphabets and numbers.' });
     }
 
-    // b. Email validation
+    // "Email" field validation. Checks for valid email format.
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
-        return res.status(400).json({ success: false, message: 'Invalid email address format.' });
+        return res.status(400).json({ success: false, message: 'Please use a valid email address.' });
     }
 
-    // c. Password validation
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{9,}$/;
+    // "Password" field validation. Only allows alphabets and numbers. Requires 8+ characters.
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
     if (!password || !passwordRegex.test(password)) {
-        return res.status(400).json({ success: false, message: 'Invalid password. Must be 9+ characters, with at least one letter and one number.' });
+        return res.status(400).json({ success: false, message: 'Invalid password. Must be 8+ characters. Use only alphabets and numbers.' });
     }
 
-    // d. Confirm password validation
+    // Checks that values in "Password" and "Confirm Password" match.
     if (password !== confirmPassword) {
-        return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+        return res.status(400).json({ success: false, message: 'Does not match entered password.' });
     }
 
-    // --- 2. Password Hashing (Requirement 9) ---
-    // We use bcrypt to create a secure hash of the user's password.
-    // We never store the plain-text password in the database.
+    // Creates a hash of password using bcrypt
     let hashedPassword;
     try {
         hashedPassword = await bcrypt.hash(password, saltRounds);
     } catch (hashError) {
         console.error('Password hashing failed:', hashError);
-        return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+        return res.status(500).json({ success: false, message: 'Server error.' });
     }
 
-    // --- 3. Database Insertion (with SQL Injection Prevention) ---
+    // Database insertion
     try {
         const queryText = `
             INSERT INTO users (username, email, password_hash)
             VALUES ($1, $2, $3)
             RETURNING id, username;
         `;
-        
-        // --- SQL Injection Prevention (Requirement 11) ---
-        // We use parameterized queries. The `pg` library takes the
-        // queryText (with $1, $2 placeholders) and the values array
-        // separately. It sanitizes the values *before* inserting them
-        // into the query, making SQL injection impossible.
-        // We NEVER build a query string like: "INSERT... VALUES ('" + username + "', ...)"
+
+        // Uses parameterized queries to prevent SQL injection attacks.
+        // pg library separately takes query text ($1, $2 used as placeholders) and values array.
+        // Sanitizes values before inserting them into query.
         const values = [username, email, hashedPassword];
         
         const result = await pool.query(queryText, values);
         const user = result.rows[0];
 
-        // --- 4. Auto-Login (Requirement 5) ---
-        // Create a session for the new user immediately.
+        // Creates a session for newly registered user to immediately log them in.
         req.session.userId = user.id;
         req.session.username = user.username;
 
@@ -188,7 +172,7 @@ app.post('/register', async (req, res) => {
         });
 
     } catch (dbError) {
-        // Handle database errors (e.g., username or email already exists)
+        // Handling of database errors
         if (dbError.code === '23505') { // Unique violation
             return res.status(409).json({ success: false, message: 'Username or email already exists.' });
         }
@@ -198,18 +182,16 @@ app.post('/register', async (req, res) => {
 });
 
 
-/**
- * Endpoint: POST /login
- * Logs in an existing user.
- */
+// Endpoint = POST /login
+// Logs user in if account exists in db.
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body; // 'username' can be username or email
+    const { username, password } = req.body; 
 
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'Username/Email and password are required.' });
     }
 
-    // --- 1. Find User (with SQL Injection Prevention) ---
+    // Searches for user account using either "username" or "email"
     try {
         const queryText = `
             SELECT id, username, password_hash 
@@ -217,25 +199,22 @@ app.post('/login', async (req, res) => {
             WHERE username = $1 OR email = $1;
         `;
         
-        // --- SQL Injection Prevention (Requirement 11) ---
-        // Again, we use a parameterized query.
+        // Uses parameterized query to prevent SQL injection
         const values = [username];
         const result = await pool.query(queryText, values);
         
         const user = result.rows[0];
 
-        // (Requirement 7) User not found
+        // Error handling if account not found
         if (!user) {
             return res.status(404).json({ success: false, message: 'Account not found. Please register.' });
         }
 
-        // --- 2. Verify Password (using hashing) ---
-        // We use bcrypt.compare to securely check if the provided
-        // password matches the stored hash.
+        // Checks if inserted password matched the stored hash using bcrypt.compare .
         const match = await bcrypt.compare(password, user.password_hash);
 
         if (match) {
-            // Password is correct! Create a session.
+            // Creates a session if password matches stored hash
             req.session.userId = user.id;
             req.session.username = user.username;
             
@@ -245,7 +224,7 @@ app.post('/login', async (req, res) => {
                 username: user.username
             });
         } else {
-            // Password incorrect
+            // Error handling for incorrect password
             res.status(401).json({ success: false, message: 'Invalid username or password.' });
         }
         
@@ -255,28 +234,24 @@ app.post('/login', async (req, res) => {
     }
 });
 
-/**
- * Endpoint: POST /logout
- * Logs out the current user by destroying their session.
- */
+// Endpoint = POST /logout
+// Logs out user by destroying the session.
 app.post('/logout', (req, res) => {
     req.session.destroy(err => {
         if (err) {
-            return res.status(500).json({ success: false, message: 'Could not log out. Please try again.' });
+            return res.status(500).json({ success: false, message: 'Error: Could not log out.' });
         }
-        // Clear the session cookie
+        // Clears session cookie
         res.clearCookie('connect.sid'); // The default session cookie name
-        res.status(200).json({ success: true, message: 'Logged out successfully.' });
+        res.status(200).json({ success: true, message: 'You have been logged out successfully.' });
     });
 });
 
-/**
- * Endpoint: POST /check-session
- * Checks if a user has an active session.
- */
+// Endpoint = POST /check-session
+// Checks for active session
 app.post('/check-session', isAuthenticated, (req, res) => {
-    // The 'isAuthenticated' middleware already checked the session.
-    // If we get here, the user is logged in.
+    // 'isAuthenticated' middleware already checked the session.
+    // User is already logged in if this point is reached.
     res.status(200).json({
         success: true,
         message: 'Session is active.',
@@ -284,9 +259,8 @@ app.post('/check-session', isAuthenticated, (req, res) => {
     });
 });
 
-// --- START SERVER ---
 
-// Start the server after ensuring the database is ready
+// Starts the server if db is ready
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
     initializeDatabase();
