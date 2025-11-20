@@ -46,7 +46,7 @@ app.use(session({
         pool: pool, // Uses the existing database pool
         tableName: 'user_sessions' // Name of the sessions table
     }),
-    secret: sessionSecret,
+    secret: sessionSecret, // Used to sign the session cookie
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -58,10 +58,10 @@ app.use(session({
 
 // Middleware to protect routes that require login
 function isAuthenticated(req, res, next) {
-    if (req.session.userId) {
-        next();
+    if (req.session.userId) { // Logs user in if they have a session and user ID
+        next(); // Grants access
     } else {
-        res.status(401).json({ success: false, message: 'You are not authenticated.' });
+        res.status(401).json({ success: false, message: 'You are not authenticated.' }); // Denies access
     }
 }
 
